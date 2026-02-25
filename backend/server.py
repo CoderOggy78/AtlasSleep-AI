@@ -156,7 +156,7 @@ Format your response as JSON with keys: assessment, phenotype, patterns (array),
         import json
         try:
             ai_data = json.loads(response)
-        except:
+        except (json.JSONDecodeError, ValueError, TypeError):
             # If not JSON, structure the response
             ai_data = {
                 "assessment": response[:300],
