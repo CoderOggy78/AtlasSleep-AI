@@ -8,5 +8,21 @@ At the same time, wearable devices continuously capture physiological signals su
 
 AtlasSleep AI addresses this gap through a physics informed, multimodal foundation architecture that integrates physiological constraints, efficient state space sequence modeling, and interpretable clinical prototypes. By ensuring physically consistent predictions and transparent reasoning, AtlasSleep AI moves beyond passive risk scoring toward equitable, real time sleep phenotyping across diverse populations
 
+# Overview
+
+AtlasSleep AI is designed to leverage sleep patterns, clinical metrics, and optional lifestyle or genetic data to detect early signs of diseases such as:
+
+Cardiovascular diseases
+
+Diabetes / metabolic syndrome
+
+Sleep disorders (apnea, insomnia)
+
+Mental health conditions (depression, anxiety)
+
+Neurodegenerative disorders (Alzheimer’s, cognitive decline)
+
+It combines machine learning, time-series analysis, and explainable AI to provide probabilistic predictions, actionable guidance, and alerts while keeping user data private and secure.
+
 
 
