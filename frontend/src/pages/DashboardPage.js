@@ -14,6 +14,7 @@ const API = `${BACKEND_URL}/api`;
 
 const DashboardPage = () => {
   const navigate = useNavigate();
+  const { user, token, logout } = useAuth();
   const fileInputRef = useRef(null);
   
   const [datasets, setDatasets] = useState([]);
