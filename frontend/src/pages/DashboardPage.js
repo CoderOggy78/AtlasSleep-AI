@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import axios from "axios";
-import { Brain, Upload, Activity, TrendingUp, Moon, FileSpreadsheet, ArrowLeft, Loader2, Sparkles } from "lucide-react";
+import { Brain, Upload, Activity, TrendingUp, Moon, FileSpreadsheet, ArrowLeft, Loader2, Sparkles, LogOut, User as UserIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
