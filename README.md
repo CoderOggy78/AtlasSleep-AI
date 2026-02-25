@@ -23,39 +23,26 @@ It combines machine learning, time-series analysis, and explainable AI to provid
 # Features
 
 Multi-disease risk prediction with probability scores
-
 Explainable AI insights (key contributing factors)
-
 Personalized sleep and lifestyle recommendations
-
 Interactive dashboards: sleep trends, risk visualizations, alerts
-
 Integration with wearables & IoT sleep trackers
-
 Optional genetic & environmental factor analysis
-
 Data privacy & local processing options
 
-Input Data
+# Input Data
 
 Sleep metrics: duration, efficiency, stages, interruptions, heart rate, snoring/apnea events
-
 Clinical data: blood pressure, blood sugar, cholesterol, BMI, lab reports
-
 Optional: genetic data, environmental factors, lifestyle habits, medications
 
-Output
+# Output
 
 Disease risk probabilities (0–100%)
-
 Confidence levels for predictions
-
 Key contributing factors (sleep, clinical, lifestyle)
-
 Personalized recommendations
-
 Alerts for high-risk conditions
-
 Visualization-ready JSON output for dashboards
 
 
