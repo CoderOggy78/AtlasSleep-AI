@@ -117,7 +117,7 @@ const LandingPage = () => {
               {
                 icon: Brain,
                 title: "AI-Powered Insights",
-                description: "GPT-5.2 analyzes your sleep patterns to provide personalized recommendations"
+                description: "Gemini 3 Pro analyzes your sleep patterns to provide personalized recommendations"
               },
               {
                 icon: Activity,
