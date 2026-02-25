@@ -1,0 +1,186 @@
+{
+  "identity": {
+    "name": "E1 - The Anti-AI Designer",
+    "mission": "Create a 'Midnight Research Lab' aesthetic that feels precise, biological, and deep. Avoid generic medical blue. Use darkness to make data glow.",
+    "tone": "Scientific, Bioluminescent, Precision, Calm",
+    "principles": [
+      "Darkness is the canvas; Data is the light.",
+      "Asymmetry creates interest; Grids create order.",
+      "Motion should feel like a heartbeat or a brainwave - organic and rhythmic.",
+      "Typography is the voice of authority."
+    ]
+  },
+  "typography": {
+    "primary": {
+      "name": "Manrope",
+      "usage": "Headings, Hero Text, Big Numbers",
+      "weights": ["400", "600", "800"],
+      "import_url": "https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&display=swap"
+    },
+    "secondary": {
+      "name": "Inter",
+      "usage": "Body text, UI elements, Dense data",
+      "weights": ["300", "400", "500"],
+      "import_url": "https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap"
+    },
+    "mono": {
+      "name": "JetBrains Mono",
+      "usage": "Code snippets, Raw CSV data, Technical metrics",
+      "weights": ["400"],
+      "import_url": "https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap"
+    }
+  },
+  "colors": {
+    "theme": "dark",
+    "palette": {
+      "background": {
+        "default": "#09090b",
+        "paper": "#18181b",
+        "subtle": "#27272a"
+      },
+      "primary": {
+        "main": "#6366f1",
+        "glow": "rgba(99, 102, 241, 0.5)",
+        "foreground": "#ffffff"
+      },
+      "secondary": {
+        "main": "#14b8a6",
+        "glow": "rgba(20, 184, 166, 0.5)"
+      },
+      "sleep_stages": {
+        "wake": "#f97316",
+        "rem": "#a855f7",
+        "light": "#3b82f6",
+        "deep": "#1e40af"
+      },
+      "status": {
+        "success": "#10b981",
+        "warning": "#f59e0b",
+        "error": "#ef4444",
+        "info": "#3b82f6"
+      },
+      "text": {
+        "primary": "#f4f4f5",
+        "secondary": "#a1a1aa",
+        "muted": "#52525b"
+      }
+    },
+    "gradients": {
+      "hero_overlay": "radial-gradient(circle at 50% 50%, rgba(99, 102, 241, 0.15) 0%, rgba(9, 9, 11, 0) 70%)",
+      "card_glow": "linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0) 100%)",
+      "active_border": "linear-gradient(90deg, transparent, #6366f1, transparent)"
+    }
+  },
+  "layout": {
+    "grid_system": "Bento Grid",
+    "modes": {
+      "dashboard": {
+        "type": "High Density",
+        "structure": "grid-cols-1 md:grid-cols-4 gap-4",
+        "areas": [
+          { "name": "Hypnogram", "span": "col-span-full md:col-span-3 row-span-2" },
+          { "name": "SleepScore", "span": "col-span-1 row-span-1" },
+          { "name": "KeyMetrics", "span": "col-span-1 row-span-1" },
+          { "name": "Trends", "span": "col-span-full md:col-span-4 row-span-2" }
+        ]
+      },
+      "landing": {
+        "type": "Asymmetric",
+        "structure": "grid-cols-1 md:grid-cols-12 gap-8",
+        "hero_height": "min-h-[90vh]"
+      }
+    },
+    "spacing": {
+      "container_padding": "p-6 md:p-8",
+      "section_gap": "gap-8 md:gap-12",
+      "element_gap": "gap-4"
+    },
+    "radius": {
+      "card": "rounded-xl",
+      "button": "rounded-lg",
+      "input": "rounded-md"
+    }
+  },
+  "components": {
+    "buttons": {
+      "primary": "bg-primary text-primary-foreground shadow-[0_0_20px_rgba(99,102,241,0.3)] hover:shadow-[0_0_30px_rgba(99,102,241,0.5)] transition-all duration-300 font-semibold tracking-wide",
+      "secondary": "bg-secondary/10 text-secondary hover:bg-secondary/20 border border-secondary/20 transition-all"
+    },
+    "cards": {
+      "base": "bg-card border border-border/40 relative overflow-hidden group",
+      "hover_effect": "hover:border-primary/50 transition-colors duration-300",
+      "glass": "bg-black/40 backdrop-blur-xl border border-white/10"
+    },
+    "charts": {
+      "library": "recharts",
+      "customization": "Custom Tooltips with glassmorphism. Hidden cartesian grids (or very subtle). Glowing lines (drop-shadow filter on SVG paths).",
+      "hypnogram_style": "Step charts with filled areas opacity 0.2, stroke width 2."
+    },
+    "navigation": {
+      "style": "Floating Island or Sticky Top with Glassmorphism",
+      "classes": "fixed top-4 left-1/2 -translate-x-1/2 w-[90%] max-w-5xl z-50 rounded-full border border-white/10 bg-black/60 backdrop-blur-md px-6 py-3 shadow-2xl"
+    }
+  },
+  "assets": {
+    "images": [
+      {
+        "category": "hero_background",
+        "url": "https://images.unsplash.com/photo-1647356191320-d7a1f80ca777?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzMjh8MHwxfHNlYXJjaHwxfHxhYnN0cmFjdCUyMGJyYWluJTIwd2F2ZXMlMjBkYXRhJTIwdmlzdWFsaXphdGlvbiUyMGRhcmt8ZW58MHx8fHwxNzcyMDE1OTg4fDA&ixlib=rb-4.1.0&q=85",
+        "description": "Abstract purple/blue brain waves for main hero background"
+      },
+      {
+        "category": "feature_visual",
+        "url": "https://images.unsplash.com/photo-1764263703837-3250668eafc2?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzMjh8MHwxfHNlYXJjaHwzfHxhYnN0cmFjdCUyMGJyYWluJTIwd2F2ZXMlMjBkYXRhJTIwdmlzdWFsaXphdGlvbiUyMGRhcmt8ZW58MHx8fHwxNzcyMDE1OTg4fDA&ixlib=rb-4.1.0&q=85",
+        "description": "Wavy lines data visualization for 'Deep Analysis' section"
+      },
+      {
+        "category": "context_image",
+        "url": "https://images.unsplash.com/photo-1666934209818-cd6a6d08bd8d?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2NzB8MHwxfHNlYXJjaHw0fHxwZXJzb24lMjBzbGVlcGluZyUyMHdpdGglMjBtZWRpY2FsJTIwc2Vuc29ycyUyMHJlc2VhcmNofGVufDB8fHx8MTc3MjAxNTk4N3ww&ixlib=rb-4.1.0&q=85",
+        "description": "Contextual image for 'How it works' or research context"
+      },
+      {
+        "category": "neural_network",
+        "url": "https://images.pexels.com/photos/17484975/pexels-photo-17484975.png?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+        "description": "3D neural network for 'AI Engine' visualization"
+      }
+    ],
+    "icons": {
+      "library": "lucide-react",
+      "style": "Stroke width 1.5px. Use 'Activity', 'Moon', 'Brain', 'FileSpreadsheet', 'Stethoscope' icons."
+    }
+  },
+  "motion": {
+    "library": "framer-motion",
+    "preferences": "Reduced motion safe. Smooth easing (easeOutQuart).",
+    "effects": {
+      "page_transition": {
+        "initial": { "opacity": 0, "y": 20 },
+        "animate": { "opacity": 1, "y": 0 },
+        "exit": { "opacity": 0, "y": -20 },
+        "transition": { "duration": 0.4 }
+      },
+      "card_hover": {
+        "scale": 1.02,
+        "transition": { "type": "spring", "stiffness": 300, "damping": 20 }
+      }
+    }
+  },
+  "accessibility": {
+    "contrast_check": "APCA preferred. Ensure text on dark backgrounds is at least Zinc-300 or lighter.",
+    "interactive_states": "Focus rings must be visible (use ring-2 ring-primary).",
+    "chart_accessibility": "Use patterns or textures in addition to color for sleep stages if possible, or ensure high contrast difference."
+  },
+  "instructions_to_main_agent": [
+    "1. Setup: Install 'framer-motion', 'recharts', 'clsx', 'tailwind-merge' if not present.",
+    "2. Theme: Enforce DARK MODE as default in tailwind.config.js. Do not rely on system preference initially.",
+    "3. Layout: Implement the 'Bento Grid' for the main dashboard. It's the core of the experience.",
+    "4. Components: Create a reusable 'GlassCard' component that implements the border and background styles defined.",
+    "5. Visualization: The Hypnogram is the hero. Spend time making it interactive (hover for details).",
+    "6. Cleanliness: Remove all default shadows. Use glows (colored shadows) sparingly for active states only."
+  ],
+  "universal_guidelines": {
+    "design_philosophy": "Anti-AI Slop. No generic gradients. No centered text blocks without purpose. Deep, rich, scientific.",
+    "spacing": "Use p-6 or p-8 for internal card padding. Don't crowd the data.",
+    "interactivity": "Every chart point should have a tooltip. Every card should respond to hover."
+  }
+}
