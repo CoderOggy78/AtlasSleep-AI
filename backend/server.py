@@ -141,13 +141,13 @@ Based on this sleep data, provide:
 
 Format your response as JSON with keys: assessment, phenotype, patterns (array), recommendations (array), sleep_score (0-100)"""
         
-        # Call GPT-5.2
-        api_key = os.environ.get('EMERGENT_LLM_KEY')
+        # Call Gemini 3 Pro
+        api_key = os.environ.get('GEMINI_API_KEY')
         chat = LlmChat(
             api_key=api_key,
             session_id=f"analysis_{uuid.uuid4()}",
             system_message="You are a clinical sleep expert providing medical-grade analysis."
-        ).with_model("openai", "gpt-5.2")
+        ).with_model("gemini", "gemini-3-pro-preview")
         
         user_message = UserMessage(text=prompt)
         response = await chat.send_message(user_message)
