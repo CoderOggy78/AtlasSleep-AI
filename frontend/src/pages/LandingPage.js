@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 
 const LandingPage = () => {
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
