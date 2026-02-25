@@ -54,28 +54,28 @@ Visualization-ready JSON output for dashboards
 
 # Sample JSON Output:
 
-{
-  "risk_scores": {
-    "cardiovascular_disease": 75,
-    "diabetes": 62,
-    "sleep_disorder": 85,
-    "mental_health": 40,
-    "neurodegenerative": 30
-  },
-  "confidence_levels": {
-    "cardiovascular_disease": "high",
-    "diabetes": "medium"
-  },
-  "key_factors": {
-    "sleep_pattern": "Low deep sleep and frequent REM interruptions",
-    "clinical": "Elevated blood pressure and HbA1c"
-  },
-  "recommendations": [
-    "Increase deep sleep by 1 hour per night",
-    "Reduce late-night caffeine intake",
-    "Consult a cardiologist for elevated blood pressure"
-  ]
-}
+    {
+      "risk_scores": {
+        "cardiovascular_disease": 75,
+        "diabetes": 62,
+        "sleep_disorder": 85,
+        "mental_health": 40,
+        "neurodegenerative": 30
+      },
+      "confidence_levels": {
+        "cardiovascular_disease": "high",
+        "diabetes": "medium"
+      },
+      "key_factors": {
+        "sleep_pattern": "Low deep sleep and frequent REM interruptions",
+        "clinical": "Elevated blood pressure and HbA1c"
+      },
+      "recommendations": [
+        "Increase deep sleep by 1 hour per night",
+        "Reduce late-night caffeine intake",
+        "Consult a cardiologist for elevated blood pressure"
+      ]
+    }
 
 
 
