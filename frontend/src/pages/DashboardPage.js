@@ -55,7 +55,10 @@ const DashboardPage = () => {
 
     try {
       const response = await axios.post(`${API}/upload`, formData, {
-        headers: { "Content-Type": "multipart/form-data" },
+        headers: { 
+          "Content-Type": "multipart/form-data",
+          Authorization: `Bearer ${token}`
+        },
       });
       
       toast.success(`Dataset "${response.data.name}" uploaded successfully! ${response.data.record_count} records processed.`);
@@ -66,6 +69,10 @@ const DashboardPage = () => {
       await loadDatasetData(response.data.dataset_id);
     } catch (error) {
       toast.error("Upload failed: " + (error.response?.data?.detail || error.message));
+      if (error.response?.status === 401) {
+        logout();
+        navigate('/login');
+      }
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
