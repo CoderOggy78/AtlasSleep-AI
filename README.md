@@ -123,9 +123,13 @@ Optional: Integrate with wearables API for real-time monitoring.
 # Future Enhancements : 
 
 Genetic risk factor integration
+
 Environmental impact tracking (light, noise, air quality)
+
 Gamified sleep & health scores with streaks & challenges
+
 Telemedicine integration for doctor consultations
+
 Multi-year longitudinal trend analysis
 
 
