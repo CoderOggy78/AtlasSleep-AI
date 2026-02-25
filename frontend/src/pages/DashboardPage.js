@@ -122,12 +122,18 @@ const DashboardPage = () => {
       const response = await axios.post(`${API}/analyze`, {
         dataset_id: selectedDataset,
         analysis_type: "comprehensive"
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
       });
       
       setAnalysis(response.data);
       toast.success("AI analysis complete!");
     } catch (error) {
       toast.error("Analysis failed: " + (error.response?.data?.detail || error.message));
+      if (error.response?.status === 401) {
+        logout();
+        navigate('/login');
+      }
     } finally {
       setAnalyzing(false);
     }
