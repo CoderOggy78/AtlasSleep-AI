@@ -77,5 +77,14 @@ Visualization-ready JSON output for dashboards
       ]
     }
 
+# Architecture & Tech Stack
+
+Backend: Python (FastAPI / Flask)
+ML Models: LSTM/GRU for sleep time-series analysis
+Random Forest / XGBoost for multi-modal data
+Database: PostgreSQL / MongoDB (encrypted)
+Frontend: React / Flutter for dashboards
+Cloud: AWS / GCP / Azure (HIPAA-compliant)
+Visualization: Plotly, Matplotlib, Seaborn
 
 
