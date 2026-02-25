@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/context/AuthContext";
 import { motion } from "framer-motion";
 import { Brain, Upload, Activity, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
