@@ -93,4 +93,41 @@ Cloud: AWS / GCP / Azure (HIPAA-compliant)
 
 Visualization: Plotly, Matplotlib, Seaborn
 
+# Installation
+
+    # Clone the repository
+    git clone https://github.com/<your-username>/sleep-health-ai.git
+    cd sleep-health-ai
+    
+    # Create virtual environment
+    python -m venv venv
+    source venv/bin/activate  # Linux/Mac
+    venv\Scripts\activate     # Windows
+    
+    # Install dependencies
+    pip install -r requirements.txt
+    
+    # Run the app
+    python app.py
+
+# Usage : 
+
+Upload your sleep data CSV from wearables or sleep trackers.
+
+Upload clinical reports (structured CSV or PDF).
+
+View risk predictions, personalized recommendations, and visual dashboards.
+
+Optional: Integrate with wearables API for real-time monitoring.
+
+# Future Enhancements : 
+
+Genetic risk factor integration
+Environmental impact tracking (light, noise, air quality)
+Gamified sleep & health scores with streaks & challenges
+Telemedicine integration for doctor consultations
+Multi-year longitudinal trend analysis
+
+
+
 
