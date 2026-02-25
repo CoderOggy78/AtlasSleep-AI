@@ -296,7 +296,7 @@ const DashboardPage = () => {
                       Ready for AI Analysis
                     </CardTitle>
                     <CardDescription>
-                      Generate comprehensive insights using GPT-5.2
+                      Generate comprehensive insights using Gemini 3 Pro
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
