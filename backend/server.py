@@ -1,19 +1,24 @@
-from fastapi import FastAPI, APIRouter, UploadFile, File, HTTPException
+from fastapi import FastAPI, APIRouter, UploadFile, File, HTTPException, Depends
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
 from pathlib import Path
-from pydantic import BaseModel, Field, ConfigDict
 from typing import List, Optional, Dict, Any
-import uuid
-from datetime import datetime, timezone
 import csv
 import io
 import pandas as pd
 from emergentintegrations.llm.chat import LlmChat, UserMessage
-import asyncio
+import uuid
+from datetime import datetime, timezone
+
+from models import (
+    User, UserCreate, UserLogin, UserResponse, UserUpdate, PasswordChange,
+    SleepRecord, Dataset, AnalysisRequest, AnalysisResult,
+    ClinicalData, DiseasePredictionRequest, DiseaseRisk, DiseasePredictionResult
+)
+from auth import hash_password, verify_password, create_access_token, get_current_user
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -23,10 +28,10 @@ mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
 
-# Create the main app without a prefix
-app = FastAPI()
+# Create the main app
+app = FastAPI(title="AtlasSleep AI", version="2.0.0")
 
-# Create a router with the /api prefix
+# Create API router
 api_router = APIRouter(prefix="/api")
 
 # Configure logging
@@ -36,54 +41,159 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Models
-class SleepRecord(BaseModel):
-    model_config = ConfigDict(extra="ignore")
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    start: Optional[str] = None
-    end: Optional[str] = None
-    sleep_quality: Optional[str] = None
-    time_in_bed: Optional[str] = None
-    heart_rate: Optional[float] = None
-    steps: Optional[int] = None
-    snore_time: Optional[float] = None
-    movements_per_hour: Optional[float] = None
-    regularity: Optional[str] = None
-    notes: Optional[str] = None
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+# ==================== AUTHENTICATION ROUTES ====================
 
-class Dataset(BaseModel):
-    model_config = ConfigDict(extra="ignore")
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    name: str
-    record_count: int
-    upload_date: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    columns: List[str]
+@api_router.post("/auth/register", response_model=UserResponse)
+async def register(user_data: UserCreate):
+    """Register a new user"""
+    try:
+        # Check if user already exists
+        existing_user = await db.users.find_one({"email": user_data.email})
+        if existing_user:
+            raise HTTPException(status_code=400, detail="Email already registered")
+        
+        # Create user
+        user = User(
+            name=user_data.name,
+            email=user_data.email,
+            password_hash=hash_password(user_data.password)
+        )
+        
+        # Store in database
+        user_dict = user.model_dump()
+        user_dict['created_at'] = user_dict['created_at'].isoformat()
+        user_dict['updated_at'] = user_dict['updated_at'].isoformat()
+        await db.users.insert_one(user_dict)
+        
+        # Return user response (without password)
+        return UserResponse(
+            id=user.id,
+            name=user.name,
+            email=user.email,
+            bio=user.bio,
+            profile_image=user.profile_image,
+            created_at=user.created_at.isoformat()
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Registration error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
-class AnalysisRequest(BaseModel):
-    dataset_id: str
-    analysis_type: str = "comprehensive"
+@api_router.post("/auth/login")
+async def login(credentials: UserLogin):
+    """Login user and return JWT token"""
+    try:
+        # Find user
+        user = await db.users.find_one({"email": credentials.email})
+        if not user:
+            raise HTTPException(status_code=401, detail="Invalid credentials")
+        
+        # Verify password
+        if not verify_password(credentials.password, user['password_hash']):
+            raise HTTPException(status_code=401, detail="Invalid credentials")
+        
+        # Create access token
+        access_token = create_access_token(
+            data={"sub": user['id'], "email": user['email']}
+        )
+        
+        return {
+            "access_token": access_token,
+            "token_type": "bearer",
+            "user": UserResponse(
+                id=user['id'],
+                name=user['name'],
+                email=user['email'],
+                bio=user.get('bio'),
+                profile_image=user.get('profile_image'),
+                created_at=user['created_at']
+            )
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Login error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
-class AnalysisResult(BaseModel):
-    model_config = ConfigDict(extra="ignore")
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    dataset_id: str
-    insights: str
-    sleep_score: float
-    quality_trend: str
-    recommendations: List[str]
-    phenotype: str
-    explainability: Dict[str, Any]
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+@api_router.get("/auth/me", response_model=UserResponse)
+async def get_current_user_info(current_user: dict = Depends(get_current_user)):
+    """Get current user information"""
+    try:
+        user = await db.users.find_one({"id": current_user['user_id']}, {"_id": 0, "password_hash": 0})
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        return UserResponse(**user)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
-# Helper function to parse CSV
+@api_router.put("/auth/profile", response_model=UserResponse)
+async def update_profile(
+    profile_data: UserUpdate,
+    current_user: dict = Depends(get_current_user)
+):
+    """Update user profile"""
+    try:
+        update_data = profile_data.model_dump(exclude_unset=True)
+        if not update_data:
+            raise HTTPException(status_code=400, detail="No data to update")
+        
+        update_data['updated_at'] = datetime.now(timezone.utc).isoformat()
+        
+        await db.users.update_one(
+            {"id": current_user['user_id']},
+            {"$set": update_data}
+        )
+        
+        user = await db.users.find_one({"id": current_user['user_id']}, {"_id": 0, "password_hash": 0})
+        return UserResponse(**user)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Profile update error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/auth/change-password")
+async def change_password(
+    password_data: PasswordChange,
+    current_user: dict = Depends(get_current_user)
+):
+    """Change user password"""
+    try:
+        # Get user
+        user = await db.users.find_one({"id": current_user['user_id']})
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        # Verify current password
+        if not verify_password(password_data.current_password, user['password_hash']):
+            raise HTTPException(status_code=401, detail="Current password is incorrect")
+        
+        # Update password
+        new_hash = hash_password(password_data.new_password)
+        await db.users.update_one(
+            {"id": current_user['user_id']},
+            {"$set": {"password_hash": new_hash, "updated_at": datetime.now(timezone.utc).isoformat()}}
+        )
+        
+        return {"message": "Password changed successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Password change error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ==================== SLEEP DATA ROUTES ====================
+
 def parse_sleep_csv(file_content: str) -> List[Dict]:
     """Parse CSV content and normalize column names"""
     try:
         csv_reader = csv.DictReader(io.StringIO(file_content), delimiter=';')
         records = []
         for row in csv_reader:
-            # Normalize keys
             normalized_row = {}
             for key, value in row.items():
                 clean_key = key.strip().lower().replace(' ', '_').replace('(', '').replace(')', '').replace('%', '')
@@ -94,23 +204,18 @@ def parse_sleep_csv(file_content: str) -> List[Dict]:
         logger.error(f"Error parsing CSV: {e}")
         raise HTTPException(status_code=400, detail=f"Error parsing CSV: {str(e)}")
 
-# AI Analysis function
 async def generate_ai_insights(records: List[Dict], dataset_name: str) -> Dict[str, Any]:
-    """Generate AI-powered insights using GPT-5.2"""
+    """Generate AI-powered insights using Gemini 3 Pro"""
     try:
-        # Prepare summary statistics
         df = pd.DataFrame(records)
         
-        # Extract key metrics
         summary = {
             "total_records": len(records),
             "avg_sleep_quality": None,
             "avg_heart_rate": None,
-            "avg_time_in_bed": None,
             "snoring_frequency": None
         }
         
-        # Calculate averages where possible
         if 'sleep_quality' in df.columns:
             quality_vals = pd.to_numeric(df['sleep_quality'].str.rstrip('%'), errors='coerce')
             summary['avg_sleep_quality'] = quality_vals.mean()
@@ -124,7 +229,6 @@ async def generate_ai_insights(records: List[Dict], dataset_name: str) -> Dict[s
             snore_count = df['did_snore'].value_counts().get('true', 0) + df['did_snore'].value_counts().get('True', 0)
             summary['snoring_frequency'] = (snore_count / len(records)) * 100
         
-        # Create prompt for AI
         prompt = f"""You are an expert sleep scientist analyzing sleep tracking data from the AtlasSleep AI platform.
 
 Dataset: {dataset_name}
@@ -141,7 +245,6 @@ Based on this sleep data, provide:
 
 Format your response as JSON with keys: assessment, phenotype, patterns (array), recommendations (array), sleep_score (0-100)"""
         
-        # Call Gemini 3 Pro
         api_key = os.environ.get('GEMINI_API_KEY')
         chat = LlmChat(
             api_key=api_key,
@@ -152,12 +255,10 @@ Format your response as JSON with keys: assessment, phenotype, patterns (array),
         user_message = UserMessage(text=prompt)
         response = await chat.send_message(user_message)
         
-        # Parse AI response
         import json
         try:
             ai_data = json.loads(response)
         except (json.JSONDecodeError, ValueError, TypeError):
-            # If not JSON, structure the response
             ai_data = {
                 "assessment": response[:300],
                 "phenotype": "General Sleep Pattern",
@@ -180,7 +281,6 @@ Format your response as JSON with keys: assessment, phenotype, patterns (array),
         }
     except Exception as e:
         logger.error(f"AI analysis error: {e}")
-        # Return fallback analysis
         return {
             "insights": "Sleep data analysis completed. Pattern recognition in progress.",
             "sleep_score": 72.0,
@@ -198,40 +298,34 @@ Format your response as JSON with keys: assessment, phenotype, patterns (array),
             }
         }
 
-# API Routes
-@api_router.get("/")
-async def root():
-    return {"message": "AtlasSleep AI API", "version": "1.0.0"}
-
 @api_router.post("/upload")
-async def upload_dataset(file: UploadFile = File(...)):
+async def upload_dataset(
+    file: UploadFile = File(...),
+    current_user: dict = Depends(get_current_user)
+):
     """Upload and process sleep data CSV"""
     try:
-        # Read file content
         content = await file.read()
         file_content = content.decode('utf-8')
         
-        # Parse CSV
         records = parse_sleep_csv(file_content)
         
         if not records:
             raise HTTPException(status_code=400, detail="No valid records found in CSV")
         
-        # Create dataset entry
         dataset = Dataset(
+            user_id=current_user['user_id'],
             name=file.filename,
             record_count=len(records),
             columns=list(records[0].keys()) if records else []
         )
         
-        # Store dataset metadata
         dataset_dict = dataset.model_dump()
         dataset_dict['upload_date'] = dataset_dict['upload_date'].isoformat()
         await db.datasets.insert_one(dataset_dict)
         
-        # Store sleep records
         for record in records:
-            sleep_record = SleepRecord(**record)
+            sleep_record = SleepRecord(user_id=current_user['user_id'], **record)
             record_dict = sleep_record.model_dump()
             record_dict['created_at'] = record_dict['created_at'].isoformat()
             record_dict['dataset_id'] = dataset.id
@@ -249,36 +343,54 @@ async def upload_dataset(file: UploadFile = File(...)):
         raise HTTPException(status_code=500, detail=str(e))
 
 @api_router.get("/datasets")
-async def get_datasets():
-    """Get all uploaded datasets"""
+async def get_datasets(current_user: dict = Depends(get_current_user)):
+    """Get all uploaded datasets for current user"""
     try:
-        datasets = await db.datasets.find({}, {"_id": 0}).sort("upload_date", -1).to_list(100)
+        datasets = await db.datasets.find(
+            {"user_id": current_user['user_id']},
+            {"_id": 0}
+        ).sort("upload_date", -1).to_list(100)
         return {"datasets": datasets}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 @api_router.get("/datasets/{dataset_id}/records")
-async def get_dataset_records(dataset_id: str, limit: int = 100):
+async def get_dataset_records(
+    dataset_id: str,
+    limit: int = 100,
+    current_user: dict = Depends(get_current_user)
+):
     """Get sleep records for a specific dataset"""
     try:
+        # Verify dataset belongs to user
+        dataset = await db.datasets.find_one({"id": dataset_id, "user_id": current_user['user_id']})
+        if not dataset:
+            raise HTTPException(status_code=404, detail="Dataset not found")
+        
         records = await db.sleep_records.find(
             {"dataset_id": dataset_id},
             {"_id": 0}
         ).limit(limit).to_list(limit)
         return {"records": records, "count": len(records)}
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 @api_router.post("/analyze")
-async def analyze_dataset(request: AnalysisRequest):
+async def analyze_dataset(
+    request: AnalysisRequest,
+    current_user: dict = Depends(get_current_user)
+):
     """Run AI analysis on a dataset"""
     try:
-        # Get dataset info
-        dataset = await db.datasets.find_one({"id": request.dataset_id}, {"_id": 0})
+        dataset = await db.datasets.find_one(
+            {"id": request.dataset_id, "user_id": current_user['user_id']},
+            {"_id": 0}
+        )
         if not dataset:
             raise HTTPException(status_code=404, detail="Dataset not found")
         
-        # Get records
         records = await db.sleep_records.find(
             {"dataset_id": request.dataset_id},
             {"_id": 0}
@@ -287,16 +399,14 @@ async def analyze_dataset(request: AnalysisRequest):
         if not records:
             raise HTTPException(status_code=404, detail="No records found")
         
-        # Generate AI insights
         ai_results = await generate_ai_insights(records, dataset['name'])
         
-        # Create analysis result
         analysis = AnalysisResult(
             dataset_id=request.dataset_id,
+            user_id=current_user['user_id'],
             **ai_results
         )
         
-        # Store analysis
         analysis_dict = analysis.model_dump()
         analysis_dict['created_at'] = analysis_dict['created_at'].isoformat()
         await db.analyses.insert_one(analysis_dict)
@@ -309,9 +419,17 @@ async def analyze_dataset(request: AnalysisRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 @api_router.get("/analyses/{dataset_id}")
-async def get_analysis(dataset_id: str):
+async def get_analysis(
+    dataset_id: str,
+    current_user: dict = Depends(get_current_user)
+):
     """Get latest analysis for a dataset"""
     try:
+        # Verify dataset belongs to user
+        dataset = await db.datasets.find_one({"id": dataset_id, "user_id": current_user['user_id']})
+        if not dataset:
+            raise HTTPException(status_code=404, detail="Dataset not found")
+        
         analysis = await db.analyses.find_one(
             {"dataset_id": dataset_id},
             {"_id": 0},
@@ -326,9 +444,16 @@ async def get_analysis(dataset_id: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 @api_router.get("/stats/{dataset_id}")
-async def get_dataset_stats(dataset_id: str):
+async def get_dataset_stats(
+    dataset_id: str,
+    current_user: dict = Depends(get_current_user)
+):
     """Get statistical summary of dataset"""
     try:
+        dataset = await db.datasets.find_one({"id": dataset_id, "user_id": current_user['user_id']})
+        if not dataset:
+            raise HTTPException(status_code=404, detail="Dataset not found")
+        
         records = await db.sleep_records.find(
             {"dataset_id": dataset_id},
             {"_id": 0}
@@ -349,26 +474,255 @@ async def get_dataset_stats(dataset_id: str):
             "trends": []
         }
         
-        # Calculate averages for numeric columns
         numeric_cols = ['heart_rate', 'steps', 'movements_per_hour', 'snore_time']
         for col in numeric_cols:
             if col in df.columns:
                 vals = pd.to_numeric(df[col], errors='coerce')
                 stats['averages'][col] = float(vals.mean()) if not vals.isna().all() else 0
         
-        # Sleep quality trend
         if 'sleep_quality' in df.columns:
             quality = pd.to_numeric(df['sleep_quality'].str.rstrip('%'), errors='coerce')
             stats['averages']['sleep_quality'] = float(quality.mean()) if not quality.isna().all() else 0
         
         return stats
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Stats error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-# Include the router in the main app
+# ==================== DISEASE PREDICTION ROUTES ====================
+
+async def predict_diseases(
+    sleep_data: List[Dict],
+    clinical_data: Optional[ClinicalData]
+) -> DiseasePredictionResult:
+    """Predict disease risks using Gemini 3 Pro"""
+    try:
+        df = pd.DataFrame(sleep_data)
+        
+        # Calculate sleep metrics
+        sleep_quality_avg = 0
+        if 'sleep_quality' in df.columns:
+            quality_vals = pd.to_numeric(df['sleep_quality'].str.rstrip('%'), errors='coerce')
+            sleep_quality_avg = quality_vals.mean()
+        
+        hr_avg = 0
+        if 'heart_rate' in df.columns:
+            hr_vals = pd.to_numeric(df['heart_rate'], errors='coerce')
+            hr_avg = hr_vals.mean()
+        
+        snoring_freq = 0
+        if 'did_snore' in df.columns:
+            snore_count = (df['did_snore'] == 'true').sum() + (df['did_snore'] == 'True').sum()
+            snoring_freq = (snore_count / len(df)) * 100
+        
+        movements_avg = 0
+        if 'movements_per_hour' in df.columns:
+            movements_avg = pd.to_numeric(df['movements_per_hour'], errors='coerce').mean()
+        
+        # Build clinical context
+        clinical_context = ""
+        if clinical_data:
+            clinical_context = f"""
+Clinical Data:
+- Blood Pressure: {clinical_data.blood_pressure_systolic}/{clinical_data.blood_pressure_diastolic} mmHg
+- Blood Sugar: {clinical_data.blood_sugar} mg/dL
+- HbA1c: {clinical_data.hba1c}%
+- Total Cholesterol: {clinical_data.cholesterol_total} mg/dL
+- LDL: {clinical_data.cholesterol_ldl} mg/dL
+- HDL: {clinical_data.cholesterol_hdl} mg/dL
+- BMI: {clinical_data.bmi}
+- Weight: {clinical_data.weight} kg
+- Age: {clinical_data.age} years
+- Smoking: {'Yes' if clinical_data.smoking else 'No'}
+- Family History: {', '.join(clinical_data.family_history) if clinical_data.family_history else 'None'}
+"""
+        
+        prompt = f"""You are an AI medical assistant specializing in predictive health analytics. Analyze the following data and predict disease risks.
+
+**Sleep Data Summary:**
+- Total Nights Analyzed: {len(sleep_data)}
+- Average Sleep Quality: {sleep_quality_avg:.1f}%
+- Average Heart Rate During Sleep: {hr_avg:.1f} bpm
+- Snoring Frequency: {snoring_freq:.1f}%
+- Average Movements per Hour: {movements_avg:.1f}
+
+{clinical_context}
+
+**Task:** Predict the likelihood of developing the following conditions in the next 6-12 months:
+1. Cardiovascular Disease (hypertension, heart attack, stroke)
+2. Type 2 Diabetes / Metabolic Syndrome
+3. Sleep Apnea
+4. Depression / Anxiety
+5. Cognitive Decline
+
+For each condition, provide:
+- Risk percentage (0-100%)
+- Confidence level (0-100%)
+- Key contributing factors
+- 2-3 specific recommendations
+
+Also provide:
+- Overall health risk score (0-100)
+- Summary assessment
+- Any urgent warnings
+
+**Important:** Predictions are probabilistic, not diagnostic. Recommend doctor consultation if high risk detected.
+
+Format response as JSON:
+{{
+  "overall_risk_score": <number>,
+  "summary": "<text>",
+  "warnings": ["<warning1>", "<warning2>"],
+  "risks": [
+    {{
+      "disease": "<name>",
+      "risk_percentage": <number>,
+      "confidence": <number>,
+      "key_factors": ["<factor1>", "<factor2>"],
+      "recommendations": ["<rec1>", "<rec2>"]
+    }}
+  ]
+}}"""
+        
+        api_key = os.environ.get('GEMINI_API_KEY')
+        chat = LlmChat(
+            api_key=api_key,
+            session_id=f"disease_pred_{uuid.uuid4()}",
+            system_message="You are an AI medical assistant providing evidence-based predictive health analytics."
+        ).with_model("gemini", "gemini-3-pro-preview")
+        
+        user_message = UserMessage(text=prompt)
+        response = await chat.send_message(user_message)
+        
+        import json
+        try:
+            prediction_data = json.loads(response)
+        except (json.JSONDecodeError, ValueError, TypeError):
+            # Fallback response
+            prediction_data = {
+                "overall_risk_score": 45.0,
+                "summary": "Based on sleep patterns, moderate health monitoring recommended.",
+                "warnings": [],
+                "risks": [
+                    {
+                        "disease": "Sleep Apnea",
+                        "risk_percentage": 35.0,
+                        "confidence": 70.0,
+                        "key_factors": ["Frequent snoring", "Sleep fragmentation"],
+                        "recommendations": ["Consult sleep specialist", "Consider sleep study"]
+                    }
+                ]
+            }
+        
+        return prediction_data
+        
+    except Exception as e:
+        logger.error(f"Disease prediction error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/predict-diseases")
+async def create_disease_prediction(
+    request: DiseasePredictionRequest,
+    current_user: dict = Depends(get_current_user)
+):
+    """Generate disease risk predictions based on sleep and clinical data"""
+    try:
+        # Verify dataset belongs to user
+        dataset = await db.datasets.find_one(
+            {"id": request.dataset_id, "user_id": current_user['user_id']},
+            {"_id": 0}
+        )
+        if not dataset:
+            raise HTTPException(status_code=404, detail="Dataset not found")
+        
+        # Get sleep records
+        records = await db.sleep_records.find(
+            {"dataset_id": request.dataset_id},
+            {"_id": 0}
+        ).to_list(1000)
+        
+        if not records:
+            raise HTTPException(status_code=404, detail="No sleep data found")
+        
+        # Run prediction
+        prediction_data = await predict_diseases(records, request.clinical_data)
+        
+        # Store prediction
+        prediction = DiseasePredictionResult(
+            user_id=current_user['user_id'],
+            dataset_id=request.dataset_id,
+            overall_risk_score=prediction_data['overall_risk_score'],
+            risks=[DiseaseRisk(**risk) for risk in prediction_data['risks']],
+            summary=prediction_data['summary'],
+            warnings=prediction_data.get('warnings', [])
+        )
+        
+        prediction_dict = prediction.model_dump()
+        prediction_dict['created_at'] = prediction_dict['created_at'].isoformat()
+        prediction_dict['risks'] = [risk.model_dump() if hasattr(risk, 'model_dump') else risk for risk in prediction_dict['risks']]
+        await db.disease_predictions.insert_one(prediction_dict)
+        
+        return prediction
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Disease prediction error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/predictions")
+async def get_user_predictions(current_user: dict = Depends(get_current_user)):
+    """Get all disease predictions for current user"""
+    try:
+        predictions = await db.disease_predictions.find(
+            {"user_id": current_user['user_id']},
+            {"_id": 0}
+        ).sort("created_at", -1).to_list(50)
+        return {"predictions": predictions}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/predictions/{prediction_id}")
+async def get_prediction(
+    prediction_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get specific disease prediction"""
+    try:
+        prediction = await db.disease_predictions.find_one(
+            {"id": prediction_id, "user_id": current_user['user_id']},
+            {"_id": 0}
+        )
+        if not prediction:
+            raise HTTPException(status_code=404, detail="Prediction not found")
+        return prediction
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ==================== HEALTH CHECK ====================
+
+@api_router.get("/")
+async def root():
+    return {
+        "message": "AtlasSleep AI API",
+        "version": "2.0.0",
+        "features": [
+            "Authentication & User Management",
+            "Sleep Data Analysis",
+            "AI-Powered Insights (Gemini 3 Pro)",
+            "Disease Risk Prediction",
+            "Clinical Explainability"
+        ]
+    }
+
+# Include router
 app.include_router(api_router)
 
+# CORS
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
