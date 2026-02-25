@@ -83,22 +83,32 @@ const DashboardPage = () => {
     setLoading(true);
     try {
       // Fetch records
-      const recordsRes = await axios.get(`${API}/datasets/${datasetId}/records?limit=100`);
+      const recordsRes = await axios.get(`${API}/datasets/${datasetId}/records?limit=100`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       setRecords(recordsRes.data.records || []);
 
       // Fetch stats
-      const statsRes = await axios.get(`${API}/stats/${datasetId}`);
+      const statsRes = await axios.get(`${API}/stats/${datasetId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       setStats(statsRes.data);
 
       // Try to fetch existing analysis
       try {
-        const analysisRes = await axios.get(`${API}/analyses/${datasetId}`);
+        const analysisRes = await axios.get(`${API}/analyses/${datasetId}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
         setAnalysis(analysisRes.data);
       } catch {
         setAnalysis(null);
       }
     } catch (error) {
       toast.error("Failed to load dataset data");
+      if (error.response?.status === 401) {
+        logout();
+        navigate('/login');
+      }
     } finally {
       setLoading(false);
     }
