@@ -32,10 +32,16 @@ const DashboardPage = () => {
 
   const fetchDatasets = async () => {
     try {
-      const response = await axios.get(`${API}/datasets`);
+      const response = await axios.get(`${API}/datasets`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       setDatasets(response.data.datasets || []);
     } catch (error) {
       console.error("Error fetching datasets:", error);
+      if (error.response?.status === 401) {
+        logout();
+        navigate('/login');
+      }
     }
   };
 
