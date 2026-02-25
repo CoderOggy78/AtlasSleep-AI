@@ -28,10 +28,10 @@ const LandingPage = () => {
           </div>
           <Button
             data-testid="nav-dashboard-btn"
-            onClick={() => navigate('/dashboard')}
+            onClick={() => navigate(isAuthenticated ? '/dashboard' : '/login')}
             className="bg-primary hover:bg-primary/90 text-white shadow-[0_0_20px_rgba(99,102,241,0.3)] hover:shadow-[0_0_30px_rgba(99,102,241,0.5)] transition-all duration-300 font-semibold tracking-wide rounded-lg"
           >
-            Open Dashboard
+            {isAuthenticated ? 'Open Dashboard' : 'Sign In'}
           </Button>
         </div>
       </nav>
