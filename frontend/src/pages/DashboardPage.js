@@ -23,10 +23,12 @@ const DashboardPage = () => {
   const [selectedDataset, setSelectedDataset] = useState(null);
   const [records, setRecords] = useState([]);
   const [analysis, setAnalysis] = useState(null);
+  const [diseasePrediction, setDiseasePrediction] = useState(null);
   const [stats, setStats] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [showClinicalForm, setShowClinicalForm] = useState(false);
 
   useEffect(() => {
     fetchDatasets();
