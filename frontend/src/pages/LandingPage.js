@@ -65,12 +65,12 @@ const LandingPage = () => {
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button
                 data-testid="hero-get-started-btn"
-                onClick={() => navigate('/dashboard')}
+                onClick={() => navigate(isAuthenticated ? '/dashboard' : '/register')}
                 size="lg"
                 className="bg-primary hover:bg-primary/90 text-white shadow-[0_0_20px_rgba(99,102,241,0.3)] hover:shadow-[0_0_30px_rgba(99,102,241,0.5)] transition-all duration-300 font-semibold tracking-wide text-lg px-8 py-6 rounded-lg"
               >
                 <Upload className="w-5 h-5 mr-2" />
-                Upload Sleep Data
+                {isAuthenticated ? 'Upload Sleep Data' : 'Get Started Free'}
               </Button>
               <Button
                 data-testid="hero-learn-more-btn"
