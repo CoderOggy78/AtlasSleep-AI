@@ -7,3 +7,4 @@ public class Placeholder {
         System.out.println("This is a placeholder Java file for project structure purposes.");
     }
 }
+
